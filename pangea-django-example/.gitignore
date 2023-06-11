@@ -6,14 +6,14 @@ __pycache__/
 source/content/media/
 source/content/static/
 
+source/app/conf/development/.env
+
 env/
 tmp/
 
 db.sqlite3
 
-# do not ignore fish dir (needed due to the above bullet point)
+# Ignore migrations except for init file
 !/source/accounts/migrations
-# ignore files and sub dirs in the /fish directory
 /source/accounts/migrations/*
-# but do not ignore the config.fish file
 !/source/accounts/migrations/__init__.py

@@ -20,7 +20,7 @@ from django.views.generic import View, FormView
 from django.conf import settings
 
 from .utils import (
-    send_activation_email, send_reset_password_email, send_forgotten_username_email, send_activation_change_email, make_message_url,
+    send_activation_email, send_reset_password_email, send_forgotten_username_email, send_activation_change_email, make_message_url, encrypt_message, decrypt_message,
 )
 from .forms import (
     SignInViaUsernameForm, SignInViaEmailForm, SignInViaEmailOrUsernameForm, SignUpForm,
@@ -28,6 +28,15 @@ from .forms import (
     ResendActivationCodeForm, ResendActivationCodeViaEmailForm, ChangeProfileForm, ChangeEmailForm, SendMessage,
 )
 from .models import Activation, Message
+
+from pangea.config import PangeaConfig
+import pangea.exceptions as pe
+from pangea.services import Audit, Redact
+
+# Initialize Pangea services
+pangea_config = PangeaConfig(domain=settings.PANGEA_DOMAIN)
+pangea_audit = Audit(settings.PANGEA_TOKEN, config=pangea_config)
+pangea_redact = Redact(settings.PANGEA_TOKEN, config=pangea_config)
 
 
 class GuestOnlyView(View):
@@ -75,6 +84,10 @@ class LogInView(GuestOnlyView, FormView):
                 request.session.set_expiry(0)
 
         login(request, form.user_cache)
+
+        if request.user.is_authenticated:
+            #calling Pangea's Secure Audit Log
+            pangea_audit.log("User: " + request.user.username+ " logged into the app")
 
         redirect_to = request.POST.get(REDIRECT_FIELD_NAME, request.GET.get(REDIRECT_FIELD_NAME))
         url_is_safe = is_safe_url(redirect_to, allowed_hosts=request.get_host(), require_https=request.is_secure())
@@ -329,6 +342,7 @@ class RestorePasswordDoneView(BasePasswordResetDoneView):
 class LogOutView(LoginRequiredMixin, BaseLogoutView):
     template_name = 'accounts/log_out.html'
 
+# Messaging views
 class MessageSendView(LoginRequiredMixin, FormView):
    template_name = 'accounts/send_message.html'
    form_class = SendMessage
@@ -336,13 +350,23 @@ class MessageSendView(LoginRequiredMixin, FormView):
    def form_valid(self, form):
         user = self.request.user
         message = form.save(commit=False)
+
         message.sender = user
         message.recipient = form.cleaned_data['recipient']
         message.subject = form.cleaned_data['subject']
-        message.message = form.cleaned_data['message']
         message.save()
-
+        
+        encryption = encrypt_message(form.cleaned_data['message'], message.id)
+        pangea_audit.log(f"Encrypting message from {user} to {message.recipient}")
+        
+        m = Message.objects.get(id=message.id)
+        m.message = encryption['cipher_text']
+        m.key_id = encryption['key_id']
+        m.save()
+        
         messages.success(self.request, _('Message sent successfully.'))
+
+        pangea_audit.log(f"{user} sent encrypted message to {message.recipient}")
 
         return redirect('accounts:send_message')
 
@@ -366,7 +390,7 @@ class MessagesView(LoginRequiredMixin, View):
             message_object['read_status'] = "Unread"
 
         print(message.id)
-        message_object['sender'] = message.sender
+        message_object['sender'] = message.sender.get_full_name()
         message_object['subject'] = message.subject
         message_object['timestamp'] = message.timestamp
         message_object['uri'] = message_url
@@ -378,15 +402,19 @@ class MessageView(LoginRequiredMixin, View):
     def get(self, request, message_id):
         template_name = 'accounts/message.html'
 
-        # user = self.request.user
+        user = self.request.user
         # message_id = self.request.user
         message = Message.objects.filter(id=message_id)[0]
         message.read_status = True
         message.save()
         message_object = {}
-        message_object['sender'] = message.sender
+        message_object['sender'] = message.sender.get_full_name()
         message_object['subject'] = message.subject
         message_object['timestamp'] = message.timestamp
-        message_object['message'] = message.message
+        plain_text = decrypt_message(message.key_id, message.message)
+        print(message.key_id)
+        message_object['message'] = plain_text
+
+        pangea_audit.log(f"{user} opened message from {pangea_redact.redact(message_object['sender']).result.redacted_text}")
         
         return render(request, template_name, {'message': message_object})

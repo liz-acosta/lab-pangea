@@ -213,25 +213,19 @@ class ChangeEmailForm(forms.Form):
 
         return email
 
-
+class UserModelChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+         return obj.get_full_name()
 
 class SendMessage(forms.ModelForm):
 
     class Meta:
         model = Message
         fields = ('recipient', 'subject', 'message' )
-    # recipients = User.objects.values_list('first_name')
-    recipient = forms.ModelChoiceField(queryset=User.objects.all().order_by('first_name'))
+
+    recipient = UserModelChoiceField(queryset=User.objects.all().order_by('last_name'))
     subject = forms.CharField(label=_('Subject'), max_length=150, required=False)
     message = forms.CharField(label=_('Message'), widget=forms.Textarea)
-    
-    # recipients = User.objects.values_list('first_name')
-    # # sender = forms.CharField(label='Recipient', widget=forms.Select(choices=FRUIT_CHOICES))
-    # recipient = forms.CharField(label=_('Recipient'), widget=forms.Select(choices=recipients))
-    # message = forms.CharField(label=_('Message'), widget=forms.Textarea)
-
-    #     first_name = forms.CharField(label=_('First name'), max_length=30, required=False)
-    # last_name = forms.CharField(label=_('Last name'), max_length=150, required=False)
 
 class RemindUsernameForm(EmailForm):
     pass

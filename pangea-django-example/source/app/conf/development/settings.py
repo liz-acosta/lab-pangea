@@ -2,6 +2,13 @@ import os
 import warnings
 from django.utils.translation import gettext_lazy as _
 from os.path import dirname
+import environ
+
+env = environ.Env()
+environ.Env.read_env()
+
+PANGEA_DOMAIN = env('PANGEA_DOMAIN')
+PANGEA_TOKEN = env('PANGEA_TOKEN')
 
 warnings.simplefilter('error', DeprecationWarning)
 
