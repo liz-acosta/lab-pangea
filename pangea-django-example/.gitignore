@@ -1,0 +1,19 @@
+.idea/
+.vscode/
+
+__pycache__/
+
+source/content/media/
+source/content/static/
+
+env/
+tmp/
+
+db.sqlite3
+
+# do not ignore fish dir (needed due to the above bullet point)
+!/source/accounts/migrations
+# ignore files and sub dirs in the /fish directory
+/source/accounts/migrations/*
+# but do not ignore the config.fish file
+!/source/accounts/migrations/__init__.py

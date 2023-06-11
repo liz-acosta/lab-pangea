@@ -1,0 +1,31 @@
+{% extends 'layouts/default/page.html' %}
+
+{% load bootstrap4 %}
+{% load i18n %}
+
+{% block content %}
+
+    <h4>Message</h4>
+
+    <table class="table table-striped">
+
+        <tr>
+
+            <th>Sender</th>
+            <th>Subject</th>
+            <th class="w-50">Message</th>
+            <th class="w-5">Time</th>
+        </tr>
+        
+        <tr>    
+
+        <td>{{ message.sender }}</td>
+        <td>{{ message.subject }}</td>
+        <td>{{ message.message }}</td>
+        <td>{{ message.timestamp }}</td>
+        </tr>
+    
+    </table>
+
+
+{% endblock %}
