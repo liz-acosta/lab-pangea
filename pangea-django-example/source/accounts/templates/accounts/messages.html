@@ -1,0 +1,29 @@
+{% extends 'layouts/default/page.html' %}
+
+{% load bootstrap4 %}
+{% load i18n %}
+
+{% block content %}
+
+    <h4>Messages</h4>
+<table class="table table-striped">
+
+    <tr>
+        <th>Status</th>
+        <th>Sender</th>
+        <th>Subject</th>
+        <th>Time</th>
+    </tr>
+    
+    {% for message in messages_list %}
+    <tr>    
+    <td>{{ message.read_status }}</td>
+    <td>{{ message.sender }}</td>
+    <td> <a class="nav-link" href="{{ message.uri }}">{{ message.subject }}</a></td>
+    <td>{{ message.timestamp }}</td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+{% endblock %}

@@ -1,0 +1,19 @@
+.idea/
+.vscode/
+
+__pycache__/
+
+source/content/media/
+source/content/static/
+
+source/app/conf/development/.env
+
+env/
+tmp/
+
+db.sqlite3
+
+# Ignore migrations except for init file
+!/source/accounts/migrations
+/source/accounts/migrations/*
+!/source/accounts/migrations/__init__.py
