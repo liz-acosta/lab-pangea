@@ -339,8 +339,10 @@ class RestorePasswordConfirmView(BasePasswordResetConfirmView):
 class RestorePasswordDoneView(BasePasswordResetDoneView):
     template_name = 'accounts/restore_password_done.html'
 
+
 class LogOutView(LoginRequiredMixin, BaseLogoutView):
     template_name = 'accounts/log_out.html'
+
 
 # Messaging views
 class MessageSendView(LoginRequiredMixin, FormView):
@@ -348,21 +350,31 @@ class MessageSendView(LoginRequiredMixin, FormView):
    form_class = SendMessage
    
    def form_valid(self, form):
+        # Take the contents of the Send Message form
+        # and save a new Message object in the database
+        
         user = self.request.user
         message = form.save(commit=False)
 
         message.sender = user
         message.recipient = form.cleaned_data['recipient']
         message.subject = form.cleaned_data['subject']
+        # TODO: Comment the one line of code below:
+        message.message = form.cleaned_data['message']
+        
         message.save()
         
-        encryption = encrypt_message(form.cleaned_data['message'], message.id)
-        pangea_audit.log(f"Encrypting message from {user} to {message.recipient}")
+        #TODO: Uncomment the code below:
+        # # Encrypt the message body using Pangea Vault
+        # encryption = encrypt_message(form.cleaned_data['message'], message.id)
         
-        m = Message.objects.get(id=message.id)
-        m.message = encryption['cipher_text']
-        m.key_id = encryption['key_id']
-        m.save()
+        # # Log the encryption event
+        # pangea_audit.log(f"Encrypting message from {user} to {message.recipient}")
+        
+        # m = Message.objects.get(id=message.id)
+        # m.message = encryption['cipher_text']
+        # m.key_id = encryption['key_id']
+        # m.save()
         
         messages.success(self.request, _('Message sent successfully.'))
 
@@ -381,21 +393,22 @@ class MessagesView(LoginRequiredMixin, View):
        
        for message in messages:
 
-
         message_object = {}
         message_url = make_message_url(request, message.id)
+        
         if message.read_status:
             message_object['read_status'] = "Read"
         else:
             message_object['read_status'] = "Unread"
 
-        print(message.id)
         message_object['sender'] = message.sender.get_full_name()
         message_object['subject'] = message.subject
         message_object['timestamp'] = message.timestamp
         message_object['uri'] = message_url
         messages_list.append(message_object)
+
        return render(request, template_name, {'messages_list': messages_list})
+
 
 class MessageView(LoginRequiredMixin, View):
 
@@ -403,18 +416,27 @@ class MessageView(LoginRequiredMixin, View):
         template_name = 'accounts/message.html'
 
         user = self.request.user
-        # message_id = self.request.user
         message = Message.objects.filter(id=message_id)[0]
         message.read_status = True
         message.save()
+        
         message_object = {}
         message_object['sender'] = message.sender.get_full_name()
         message_object['subject'] = message.subject
         message_object['timestamp'] = message.timestamp
-        plain_text = decrypt_message(message.key_id, message.message)
-        print(message.key_id)
-        message_object['message'] = plain_text
+        
+        # TODO: Comment out the one line of code below:
+        message_object['message'] = message.message
+        
+        # TODO: Uncomment the code below:
+        # # Decrypt the ciphertext
+        # plain_text = decrypt_message(message.key_id, message.message)
+        # message_object['message'] = plain_text
 
-        pangea_audit.log(f"{user} opened message from {pangea_redact.redact(message_object['sender']).result.redacted_text}")
+        #TODO: Comment out the code below:
+        pangea_audit.log(f"{user} opened message from {message_object['sender']}")
+
+        # TODO: Uncomment the one line of code below:
+        # pangea_audit.log(f"{user} opened message from {pangea_redact.redact(message_object['sender']).result.redacted_text}")
         
         return render(request, template_name, {'message': message_object})

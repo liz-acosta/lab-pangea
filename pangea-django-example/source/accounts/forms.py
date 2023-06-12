@@ -213,6 +213,11 @@ class ChangeEmailForm(forms.Form):
 
         return email
 
+
+class RemindUsernameForm(EmailForm):
+    pass
+
+
 class UserModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
          return obj.get_full_name()
@@ -226,6 +231,3 @@ class SendMessage(forms.ModelForm):
     recipient = UserModelChoiceField(queryset=User.objects.all().order_by('last_name'))
     subject = forms.CharField(label=_('Subject'), max_length=150, required=False)
     message = forms.CharField(label=_('Message'), widget=forms.Textarea)
-
-class RemindUsernameForm(EmailForm):
-    pass

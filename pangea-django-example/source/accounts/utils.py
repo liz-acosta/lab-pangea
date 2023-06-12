@@ -19,8 +19,6 @@ import base64
 # Initialize Pangea services
 pangea_config = PangeaConfig(domain=settings.PANGEA_DOMAIN)
 pangea_vault = Vault(settings.PANGEA_TOKEN, config=pangea_config)
-pangea_redact = Redact(settings.PANGEA_TOKEN, config=pangea_config)
-pangea_audit = Audit(settings.PANGEA_TOKEN, config=pangea_config)
 
 
 def send_mail(to, template, context):
@@ -74,11 +72,13 @@ def make_message_url(request, message_id):
     return uri
 
 def encrypt_message(plaintext_message, message_id):
+    """
+    Generate a key and encrypt a message and name the newly generated key with the message id.
+    Return an object with the ciphertext and Pangea generated id of the new key.
+    """
     
     try:
         encryption = {}
-
-        print(type(plaintext_message))
         
         # Create a symmetric key with Pangea-provided material and default parameters
         create_response = pangea_vault.symmetric_generate(
@@ -100,8 +100,7 @@ def encrypt_message(plaintext_message, message_id):
             print(f"\t{err.detail} \n")
 
 def decrypt_message(key_id, cipher_text):
-
-    print("this ran")
+    # Decrypt the ciphertext with the key id.
     
     try:
         # Decrypt a message
